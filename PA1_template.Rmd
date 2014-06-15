@@ -2,18 +2,84 @@
 
 
 ## Loading and preprocessing the data
-
+```{r}
+#load data
+activityData <- read.csv('activity.csv')
+#remove rows with NA values for steps column
+activiyDataNoNA <- na.omit(activityData)
+```
 
 
 ## What is mean total number of steps taken per day?
 
+Below is a histogram that plots the total number of steps taken each day.
+```{r}
+library(plyr)
+stepsPerDay <- ddply(activiyDataNoNA, .(date), summarise, totalSteps=sum(steps))
+hist(stepsPerDay$totalSteps)
+```
 
+The mean of the total number of steps taken per day is `r mean(stepsPerDay$totalSteps)`.  
+
+The median of the total number of steps taken per day is `r median(stepsPerDay$totalSteps)`.  
 
 ## What is the average daily activity pattern?
 
+Below is a time series plot of the average number of steps per 5-minute time interval. The averages are calculated accross all days.
 
+```{r}
+avgStepsPerInterval <- ddply(activiyDataNoNA, .(interval), summarise, avgSteps=mean(steps))
+plot(avgStepsPerInterval$interval, avgStepsPerInterval$avgSteps, type="l")
+```
+
+Now let's find the interval on average with the most steps.
+
+```{r results='hide'}
+intervalWithMaxSteps <- avgStepsPerInterval[avgStepsPerInterval$avgSteps == max(avgStepsPerInterval$avgSteps),1]
+```
+
+On average the interval with the most steps is the interval `r intervalWithMaxSteps`.
 
 ## Imputing missing values
+
+We are going to estimate how the missing values in the original data affect the results we get back.  
+
+First we will calculate the total number of missing values in the original dataset.
+```{r results='hide'}
+numNAValues <- nrow(activityData[is.na(activityData$steps),])
+```
+
+So the total number of rows with missing steps values is `r numNAValues`.
+
+Next, we will fill in estimates for the missing steps values. We are going to fill in any missing steps value with the mean value over all days for that interval.
+
+```{r results='hide', cache=TRUE}
+newActivityData <- activityData
+for (i in 1:nrow(newActivityData)) {
+	row <- newActivityData[i,]
+	
+	if (is.na(row$steps)) {
+		#steps is an NA value so get the avg steps for time interval
+		newActivityData[i,"steps"] <- avgStepsPerInterval[
+			avgStepsPerInterval$interval == row$interval,"avgSteps"]
+	}
+}
+```
+
+Now we will plot another histogram of the number of steps taken each day but using this new data with missing values filled in:
+
+```{r}
+stepsPerDay <- ddply(newActivityData, .(date), summarise, totalSteps=sum(steps))
+hist(stepsPerDay$totalSteps)
+```
+
+The new mean of the total number of steps taken per day is `r mean(stepsPerDay$totalSteps)`.  
+
+And the new median of the total number of steps taken per day is `r median(stepsPerDay$totalSteps)`.  
+
+As you can see the new mean after imputing missing values is the same as the previous mean calculated when we removed all NA values.  
+
+The new median however differs slightly and is now the same as the mean where it was slightly smaller before.
 
 
 
