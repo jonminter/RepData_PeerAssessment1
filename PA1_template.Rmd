@@ -84,3 +84,33 @@ The new median however differs slightly and is now the same as the mean where it
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+
+First we need to convert the "date" column into vector of type "Date". Then we need to create a factor variable with the levels "weekday" and "weekend" so we can tell whether each row is a date that falls during the weekday or is on the weekend.
+
+```{r results='hide'}
+dates <- as.Date(newActivityData$date)
+weekdayOrWeekendFunc <- function(x) {
+	w = weekdays(x)
+	if (w == "Sunday" || w == "Saturday") {
+		"Weekend"
+	} else {
+		"Weekday"
+	}
+}
+newActivityData$weekdayOrWeekend <- sapply(dates, weekdayOrWeekendFunc)
+```
+
+Now we will plot the number of steps taken per interval for both weekdays and weekends.
+
+```{r}
+weekdayRows <- newActivityData[newActivityData$weekdayOrWeekend == "Weekday",]
+avgStepsPerIntervalWeekday <- ddply(weekdayRows, .(interval), summarise, avgSteps=mean(steps))
+
+weekendRows <- newActivityData[newActivityData$weekdayOrWeekend == "Weekend",]
+avgStepsPerIntervalWeekend <- ddply(weekendRows, .(interval), summarise, avgSteps=mean(steps))
+
+par(mfrow=c(2,1))
+plot(avgStepsPerIntervalWeekend$interval, avgStepsPerIntervalWeekend$avgSteps, type="l", main="weekend")
+plot(avgStepsPerIntervalWeekday$interval, avgStepsPerIntervalWeekday$avgSteps, type="l", main="weekday")
+```
